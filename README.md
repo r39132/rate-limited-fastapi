@@ -1,10 +1,11 @@
-
 # rate-limited-fastapi
 
 A Python 3.12.3 project demonstrating a **FastAPI** app protected by a **Redis-backed token
 bucket** (Lua script), a **Locust** load generator, and a **Streamlit** dashboard with
 time‑series charts. Includes strong Python best practices: `black`, `isort`, `flake8`, `mypy`,
 `pytest` + coverage, and `pre-commit` hooks.
+
+![Locust and Performance Dashboard](docs/locust_and_perf_dashboard.png)
 
 ## Quick start
 

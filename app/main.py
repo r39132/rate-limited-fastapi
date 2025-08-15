@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 import time
 from typing import Dict, Any
@@ -41,6 +40,9 @@ async def shutdown() -> None:
 
 @app.middleware("http")
 async def rate_limit_mw(request: Request, call_next):
+    # Exclude dashboard metrics endpoint from rate limiting
+    if request.url.path == "/metrics":
+        return await call_next(request)
     assert redis is not None
     cid = _client_id(request)
     key = f"{settings.bucket_prefix}{cid}".encode()
@@ -61,7 +63,7 @@ async def rate_limit_mw(request: Request, call_next):
         response.headers[k] = v
     rolling.append(Metrics(ts=time.time(), allowed=1, blocked=0, tokens=tokens_after))
     if len(rolling) > 1000:
-        del rolling[: len(rolling) - 1000]
+        rolling.pop(0)
     return response
 
 @app.get("/items")
