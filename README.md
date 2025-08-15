@@ -1,69 +1,106 @@
 # rate-limited-fastapi
 
 A Python 3.12.3 project demonstrating a **FastAPI** app protected by a **Redis-backed token
-bucket** (Lua script), a **Locust** load generator, and a **Streamlit** dashboard with
-time‑series charts. Includes strong Python best practices: `black`, `isort`, `flake8`, `mypy`,
+bucket** (Lua script), a **Locust** load generator, a **Streamlit** dashboard with
+time-series charts, and a **`hammer.sh`** script for shell-based load testing.  
+Includes strong Python best practices: `black`, `isort`, `flake8`, `mypy`,
 `pytest` + coverage, and `pre-commit` hooks.
 
 ![Locust and Performance Dashboard](docs/locust_and_perf_dashboard.png)
 
+---
+
 ## Quick start
 
+### 1) Install [uv](https://docs.astral.sh/uv/)
 ```bash
-# 1) Create and activate a virtualenv (recommended)
-python3.12 -m venv .venv && source .venv/bin/activate
-
-# 2) Install deps
-pip install -r requirements.txt
-
-# 3) Start Redis (Docker)
-./scripts/run_redis.sh
-
-# 4) Start FastAPI
-uvicorn app.main:app --reload
-
-# 5) (Optional) Preload the Lua script
-python scripts/setup_redis.py
-
-# 6) Run the dashboard
-streamlit run dashboard/app.py
-
-# 7) Run load (separate terminal)
-locust -f load/locustfile.py --host=http://localhost:8000
+curl -Ls https://astral.sh/uv/install.sh | sh
 ```
+
+### 2) Create and sync a virtual environment
+```bash
+uv venv --python 3.12.3
+uv sync
+```
+
+This will create `.venv` and install all runtime + dev dependencies from `pyproject.toml` / `uv.lock`.
+
+### 3) Start Redis (Docker)
+```bash
+./scripts/run_redis.sh
+```
+
+### 4) Preload the Lua script (optional)
+```bash
+uv run python scripts/setup_redis.py
+```
+
+### 5) Run the API server
+```bash
+uv run uvicorn app.main:app --reload
+```
+
+### 6) Run the dashboard
+```bash
+uv run streamlit run dashboard/app.py
+```
+
+### 7) Run load tests
+- **Option 1: Locust (browser UI)**
+  ```bash
+  uv run locust -f load/locustfile.py --host=http://localhost:8000
+  ```
+  Open <http://localhost:8089>.
+
+- **Option 2: Hammer script (shell alternative)**
+  ```bash
+  ./hammer.sh
+  ```
+
+---
 
 ## What’s inside
 
-- **FastAPI** app at `app/main.py` that enforces rate limits using **Redis Lua** (token bucket).
+- **FastAPI** app at `app/main.py` enforcing rate limits with **Redis Lua** (token bucket).
 - **Hardened Lua** at `rate_limiter.lua`: uses Redis `TIME`, clamps elapsed, caps tokens, TTL.
-- **Metrics**: simple `/metrics` endpoint exposes allowed vs throttled counts and current tokens.
-- **Streamlit dashboard** at `dashboard/app.py` showing time-series of pass vs throttle and token count.
-- **Locust** load at `load/locustfile.py` to prove the limiter works.
+- **Metrics**: `/metrics` endpoint exposes allowed vs throttled counts and current tokens.
+- **Streamlit dashboard** at `dashboard/app.py` (time-series of pass vs throttle and token count).
+- **Locust** load at `load/locustfile.py` to stress test the limiter.
+- **Hammer script** at `hammer.sh` for quick shell-based load testing.
 - **Tests** in `tests/` covering token refill/allow/deny behavior.
-- Best-practice tooling: `black`, `flake8`, `isort`, `mypy`, `pytest`, `pytest-cov`, `pre-commit`.
+- **Best-practice tooling**: `black`, `flake8`, `isort`, `mypy`, `pytest`, `pytest-cov`, `pre-commit`.
+
+---
 
 ## Configuration
 
 Edit `.env` (or env vars) to tune limits:
 
-```
+```bash
 REDIS_URL=redis://localhost:6379/0
 TB_CAPACITY=20          # max tokens (burst)
 TB_RATE=20              # tokens per second
 BUCKET_PREFIX=tb:user:  # key prefix
 ```
 
+---
+
 ## Token bucket rationale
 
-We use **continuous (lazy) refill**: tokens added = `rate * elapsed_ms/1000`, clamped to capacity, and
-applied atomically in Redis to avoid races. This avoids fixed-window boundary spikes and maintains a
-rolling, fair limit.
+We use **continuous (lazy) refill**:  
+`tokens_added = rate * elapsed_ms / 1000`  
+Values are clamped to capacity and applied atomically in Redis.  
+This avoids fixed-window boundary spikes and maintains a rolling, fair limit.
+
+---
 
 ## Security notes
 
-- The Lua script only accepts numeric inputs and clamps elapsed times to avoid clock skew effects.
-- We use Redis `TIME` (server time) for consistency.
+- Lua script only accepts numeric inputs and clamps elapsed times to avoid clock skew effects.
+- Redis `TIME` (server time) is used for consistency.
 - Keys expire after *full refill time* of idleness to reclaim memory.
+
+---
 
 ## Make it yours
 
@@ -71,4 +108,39 @@ rolling, fair limit.
 - Extend metrics (Prometheus compatible) or feed logs to your observability stack.
 - Deploy behind Hitch/HAProxy/Nginx/Envoy if you need TLS/WAF/routing ahead of FastAPI.
 
-MIT License.
+---
+
+## Development
+
+- Add new dependencies:
+  ```bash
+  uv add <package>
+  uv add --group dev <dev-package>
+  ```
+
+- Update dependencies:
+  ```bash
+  uv lock --upgrade
+  uv sync
+  ```
+
+- Run tests:
+  ```bash
+  uv run pytest
+  ```
+
+---
+
+## Deployment
+
+If you need a `requirements.txt` (for Docker or pip-only environments):
+
+```bash
+uv pip compile pyproject.toml -o requirements.txt
+```
+
+---
+
+## License
+
+MIT
