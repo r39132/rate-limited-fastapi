@@ -1,4 +1,3 @@
-
 <!-------->
 [![Python 3.12+](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-API-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
@@ -117,30 +116,32 @@ BUCKET_PREFIX=tb:user:  # key prefix
 
 ---
 
-## Token bucket rationale
+## Token bucket rationale & Retry-After enhancement
 
-We use **continuous (lazy) refill**:  
-`tokens_added = rate * elapsed_ms / 1000`  
-Values are clamped to capacity and applied atomically in Redis.  
-This avoids fixed-window boundary spikes and maintains a rolling, fair limit.
+The Redis Lua token bucket implements lazy (continuous) refill:
 
----
+```
+tokens_added = rate * elapsed_ms / 1000
+```
 
-## Security notes
+The enhanced Lua script now also returns an explicit `retry_after` (whole seconds) so clients know how long to wait before retrying:
 
-- Lua script only accepts numeric inputs and clamps elapsed times to avoid clock skew effects.
-- Redis `TIME` (server time) is used for consistency.
-- Keys expire after *full refill time* of idleness to reclaim memory.
+- Script return order: `allowed`, `remaining_tokens`, `retry_after_seconds`
+- `retry_after == 0`: request allowed (or immediately retryable after consumption)
+- `retry_after > 0`: client should wait that many whole seconds
+- `retry_after == -1`: request can never succeed (requested > capacity or refill rate <= 0); the API omits the `Retry-After` header in that case
 
----
+Example 429 response:
+```
+HTTP/1.1 429 Too Many Requests
+Retry-After: 3
+X-RateLimit-Capacity: 20
+X-RateLimit-Rate: 20
+X-RateLimit-Remaining: 0.12
+```
 
-## Make it yours
-
-- Change identification policy (per-IP, per-API key, per-user) in `app/main.py`.
-- Extend metrics (Prometheus compatible) or feed logs to your observability stack.
-- Deploy behind Hitch/HAProxy/Nginx/Envoy if you need TLS/WAF/routing ahead of FastAPI.
-
----
+Blog post with more detail:  
+https://www.linkedin.com/pulse/fun-coding-friday-rate-limiting-redis-sid-anand-d8svf
 
 ## Development
 - Add new dependencies:

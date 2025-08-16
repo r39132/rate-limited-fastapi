@@ -1,15 +1,17 @@
 from __future__ import annotations
 
-from pathlib import Path
+import pathlib
+import time
+from typing import Any  # added
 
 from redis.asyncio import Redis
 
 SCRIPT_SHA: str | None = None
+SCRIPT_PATH = pathlib.Path(__file__).resolve().parents[1] / "rate_limiter.lua"
 
 
 def _load_script_text() -> str:
-    lua_path = Path(__file__).resolve().parent.parent / "rate_limiter.lua"
-    return lua_path.read_text(encoding="utf-8")
+    return SCRIPT_PATH.read_text(encoding="utf-8")
 
 
 async def ensure_script(redis: Redis) -> str:
@@ -24,8 +26,29 @@ async def allow(
     key: str,
     capacity: int,
     rate: float,
+    requested: int = 1,
 ) -> tuple[bool, float, int]:
+    """
+    Returns (allowed, tokens_after, retry_after_seconds)
+
+    retry_after_seconds:
+      0   -> request allowed OR immediately retryable
+      >0  -> seconds client should wait before retrying
+      -1  -> request can never be satisfied (requested > capacity or rate == 0)
+    """
     sha = await ensure_script(redis)
-    # EVALSHA returns [allowed, tokens_after, retry_after_ms]
-    allowed, tokens_after, retry_ms = await redis.evalsha(sha, 1, key, capacity, rate)
-    return bool(allowed), float(tokens_after), int(retry_ms)
+    now_ms = int(time.time() * 1000)
+    # Lua returns: allowed(int), tokens_after(number), retry_after(int)
+    res: list[Any] = await redis.evalsha(
+        sha,
+        1,
+        key,
+        capacity,
+        rate,
+        now_ms,
+        requested,
+    )
+    allowed_int, tokens_after_raw, retry_after_val = res
+    allowed_flag = bool(int(allowed_int))
+    tokens_after = float(tokens_after_raw)
+    return allowed_flag, tokens_after, int(retry_after_val)

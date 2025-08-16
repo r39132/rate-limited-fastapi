@@ -1,62 +1,61 @@
-
--- Token Bucket in Redis (atomic, hardened)
--- KEYS[1] = bucket key
--- ARGV[1] = capacity (tokens)
--- ARGV[2] = rate tokens/sec (float allowed)
+-- Token Bucket with Retry-After support
 --
--- Returns array:
---   [1] allowed (1 or 0)
---   [2] tokens_after (float)
---   [3] retry_after_ms (int) -- 0 if allowed
+-- KEYS[1] - bucket key
+-- ARGV[1] - capacity (int)
+-- ARGV[2] - refill rate (tokens per second, may be fractional)
+-- ARGV[3] - now (milliseconds)
+-- ARGV[4] - requested tokens (int)
 --
--- State is stored as hash with fields: 'tokens' (float), 'last_ts' (ms).
+-- Returns (in this order to preserve existing Python tuple unpacking):
+-- 1) allowed (1/0)
+-- 2) remaining tokens after evaluation (may be fractional)
+-- 3) retry_after (seconds; 0 if allowed; -1 means "cannot ever be satisfied")
+--
+-- NOTE: We return tokens as the second value (rather than after retry_after)
+-- to keep compatibility with existing Python code that unpacked as:
+-- allowed, tokens_after, retry = ...
 
-local key = KEYS[1]
-local capacity = tonumber(ARGV[1])
-local rate = tonumber(ARGV[2])
+local capacity     = tonumber(ARGV[1])
+local refill_rate  = tonumber(ARGV[2])
+local now_ms       = tonumber(ARGV[3])
+local requested    = tonumber(ARGV[4])
 
-if capacity == nil or rate == nil or capacity < 0 or rate <= 0 then
-  return {0, 0, 0}
-end
+local bucket       = redis.call("HMGET", KEYS[1], "tokens", "timestamp")
+local tokens       = tonumber(bucket[1])
+local last_refill  = tonumber(bucket[2])
 
--- Server time to avoid client clock skew
-local t = redis.call("TIME")
-local now_ms = t[1] * 1000 + math.floor(t[2] / 1000)
-
-local data = redis.call("HMGET", key, "tokens", "last_ts")
-local tokens = tonumber(data[1])
-local last_ts = tonumber(data[2])
-
-if tokens == nil or last_ts == nil then
+if tokens == nil then
   tokens = capacity
-  last_ts = now_ms
+  last_refill = now_ms
 end
 
-local elapsed = now_ms - last_ts
-if elapsed < 0 then
-  elapsed = 0
+-- Refill
+local delta_secs = math.max(0, now_ms - last_refill) / 1000.0
+local filled = tokens + (delta_secs * refill_rate)
+if filled > capacity then
+  filled = capacity
 end
 
--- Refill fractionally
-local refill = (elapsed * rate) / 1000.0
-tokens = math.min(capacity, tokens + refill)
-last_ts = now_ms
+local allowed = filled >= requested
+local retry_after = 0
 
-local allowed = 0
-local retry_after_ms = 0
-if tokens >= 1.0 then
-  allowed = 1
-  tokens = tokens - 1.0
+if allowed then
+  filled = filled - requested
 else
-  -- how long until next token?
-  local needed = 1.0 - tokens
-  retry_after_ms = math.ceil((needed / rate) * 1000.0)
+  if requested > capacity or refill_rate <= 0 then
+    retry_after = -1
+  else
+    local deficit = requested - filled
+    retry_after = math.ceil(deficit / refill_rate)
+  end
 end
 
-redis.call("HMSET", key, "tokens", tokens, "last_ts", last_ts)
--- expire after time-to-full + small buffer
-local ttf_ms = math.ceil(((capacity - tokens) / rate) * 1000.0) + 2000
-if ttf_ms < 5000 then ttf_ms = 5000 end
-redis.call("PEXPIRE", key, ttf_ms)
+-- Persist
+redis.call("HMSET", KEYS[1], "tokens", filled, "timestamp", now_ms)
+-- Optional: expire after one full refill horizon (capacity / rate)
+if refill_rate > 0 then
+  local ttl = math.ceil(capacity / refill_rate)
+  redis.call("EXPIRE", KEYS[1], ttl)
+end
 
-return {allowed, tokens, retry_after_ms}
+return { allowed and 1 or 0, filled, retry_after }

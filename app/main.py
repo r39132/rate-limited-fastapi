@@ -57,7 +57,7 @@ async def rate_limit_mw(
     assert redis is not None
     cid = _client_id(request)
     key = f"{settings.bucket_prefix}{cid}"
-    allowed_flag, tokens_after, retry_ms = await allow(
+    allowed_flag, tokens_after, retry_after = await allow(
         redis, key, settings.tb_capacity, settings.tb_rate
     )
     headers: dict[str, str] = {
@@ -67,10 +67,17 @@ async def rate_limit_mw(
     }
     now_ts = time.time()
     if not allowed_flag:
-        headers["Retry-After"] = f"{max(1, int((retry_ms + 999)//1000))}"
+        # retry_after >= 0 means the request can succeed later
+        if retry_after >= 0:
+            # Ensure canonical casing; FastAPI will preserve it
+            headers["Retry-After"] = str(max(1, retry_after))
         rolling.append(Metrics(ts=now_ts, allowed=0, blocked=1, tokens=tokens_after))
         _prune_metrics(now_ts)
-        return JSONResponse({"detail": "rate limit exceeded"}, status_code=429, headers=headers)
+        return JSONResponse(
+            {"detail": "rate limit exceeded", "retry_after": retry_after},
+            status_code=429,
+            headers=headers,
+        )
 
     start = time.perf_counter()
     response = await call_next(request)
