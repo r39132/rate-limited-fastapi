@@ -12,6 +12,8 @@
 ![pytest](https://img.shields.io/badge/tests-pytest-0A9EDC?logo=pytest)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://pre-commit.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+---
+<img src="docs/logo_1.png" alt="drawing" width="150"/>
 
 # rate-limited-fastapi
 
