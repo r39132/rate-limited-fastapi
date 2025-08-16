@@ -18,10 +18,19 @@ Includes strong Python best practices: `black`, `isort`, `ruff`, `mypy`,
 
 ## Quick start
 
-### 1) Install [uv](https://docs.astral.sh/uv/)
+### 0) Install [uv](https://docs.astral.sh/uv/)
 ```bash
+# Install via Curl
 curl -Ls https://astral.sh/uv/install.sh | sh
+# or via Pipx (Recommended)
+pipx install uv
 ```
+### 1) Install [precommit/prepush hooks](https://pre-commit.com/#3-install-the-git-hook-scripts)
+```bash
+pre-commit install --hook-type pre-commit
+pre-commit install --hook-type pre-push
+```
+ 
 
 ### 2) Create and sync a virtual environment
 ```bash
@@ -117,7 +126,6 @@ This avoids fixed-window boundary spikes and maintains a rolling, fair limit.
 ---
 
 ## Development
-
 - Add new dependencies:
   ```bash
   uv add <package>
@@ -135,6 +143,14 @@ This avoids fixed-window boundary spikes and maintains a rolling, fair limit.
   uv run pytest
   ```
 
+- Run pre-commit checks before committing and pushing to git
+  ```bash
+  pre-commit run --all-files
+  ```
+Refer to the Screenshot below:
+![Run Pre-Commit Checks](docs/Run_pre-commit_checks_before_commit_and_push.png)
+
+Note: Most of the checks will autofix code, so if they fail the first time, just run again. Even if you forget to run `pre-commit run --all-files`, they checks will run when you try to commit or push
 ---
 
 ## Deployment
