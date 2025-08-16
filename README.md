@@ -131,13 +131,21 @@ The enhanced Lua script now also returns an explicit `retry_after` (whole second
 - `retry_after > 0`: client should wait that many whole seconds
 - `retry_after == -1`: request can never succeed (requested > capacity or refill rate <= 0); the API omits the `Retry-After` header in that case
 
-Example 429 response:
+Example Request with 429 response:
 ```
+http://localhost:8000/items
+
 HTTP/1.1 429 Too Many Requests
-Retry-After: 3
-X-RateLimit-Capacity: 20
-X-RateLimit-Rate: 20
-X-RateLimit-Remaining: 0.12
+date: Sat, 16 Aug 2025 20:46:19 GMT
+server: uvicorn
+x-ratelimit-capacity: 20
+x-ratelimit-rate: 5.0
+x-ratelimit-remaining: 0.00
+retry-after: 1
+content-length: 48
+content-type: application/json
+
+{"detail":"rate limit exceeded","retry_after":1}
 ```
 
 Blog post with more detail:  
