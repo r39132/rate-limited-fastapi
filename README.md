@@ -151,6 +151,7 @@ Refer to the Screenshot below:
 ![Run Pre-Commit Checks](docs/Run_pre-commit_checks_before_commit_and_push.png)
 
 Note: Most of the checks will autofix code, so if they fail the first time, just run again. Even if you forget to run `pre-commit run --all-files`, they checks will run when you try to commit or push
+
 ---
 
 ## Deployment
