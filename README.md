@@ -1,3 +1,18 @@
+
+<!-------->
+[![Python 3.12+](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-API-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Uvicorn](https://img.shields.io/badge/Server-Uvicorn-000000?logo=uvicorn&logoColor=white)](https://www.uvicorn.org/)
+[![Redis](https://img.shields.io/badge/Rate%20Limit-Redis%20%2B%20Lua-D82C20?logo=redis&logoColor=white)](https://redis.io/)
+[![Streamlit](https://img.shields.io/badge/Dashboard-Streamlit-FF4B4B?logo=streamlit&logoColor=white)](https://streamlit.io/)
+[![Locust](https://img.shields.io/badge/Load-Testing%20with%20Locust-77B829)](https://locust.io/)
+[![Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://black.readthedocs.io/)
+![flake8](https://img.shields.io/badge/lint-flake8-5A9FD4)
+![mypy](https://img.shields.io/badge/types-mypy-2A6DB2)
+![pytest](https://img.shields.io/badge/tests-pytest-0A9EDC?logo=pytest)
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://pre-commit.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+
 # rate-limited-fastapi
 
 A Python 3.12.3 project demonstrating a **FastAPI** app protected by a **Redis-backed token
