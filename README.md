@@ -3,10 +3,16 @@
 A Python 3.12.3 project demonstrating a **FastAPI** app protected by a **Redis-backed token
 bucket** (Lua script), a **Locust** load generator, a **Streamlit** dashboard with
 time-series charts, and a **`hammer.sh`** script for shell-based load testing.  
-Includes strong Python best practices: `black`, `isort`, `flake8`, `mypy`,
-`pytest` + coverage, and `pre-commit` hooks.
+Includes strong Python best practices: `black`, `isort`, `ruff`, `mypy`,
+`pytest` + coverage, and both `pre-commit` & `pre-push` hooks.
 
-![Locust and Performance Dashboard](docs/locust_and_perf_dashboard.png)
+---
+## Screenshots
+### Locust (Load Generator) Dashboard
+![Locust (Load Generator) Dashboard](docs/Locust.png)
+
+### Performance Dashboard
+![Performance Dashboard](docs/Token_Bucket_Perf_Dashboard.png)
 
 ---
 

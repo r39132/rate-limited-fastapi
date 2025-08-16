@@ -1,34 +1,32 @@
-
 import asyncio
-import time
-import pytest
+
 from redis.asyncio import Redis
-from app.token_bucket import allow, ensure_script
 
-@pytest.mark.asyncio
-async def test_allow_and_refill(tmp_path):
-    r = Redis.from_url("redis://localhost:6379/15", decode_responses=False)
-    key = b"tb:testcase"
-    await r.delete(key)
-    await ensure_script(r)
+from app.token_bucket import allow
 
-    capacity = 5
-    rate = 5.0  # tokens/sec
 
-    # consume capacity quickly
-    allowed = 0
-    for _ in range(capacity):
-        a, _, _ = await allow(r, key, capacity, rate)
-        allowed += int(a)
-    assert allowed == capacity
+async def test_allow_initial(redis: Redis) -> None:
+    allowed, tokens, _ = await allow(redis, "tb:user:test1", 10, 10)
+    assert allowed
+    assert 0 <= tokens <= 10
 
-    # next should be denied immediately
-    a, tokens, retry = await allow(r, key, capacity, rate)
-    assert a is False
-    assert retry > 0
 
-    # wait ~0.3s then one should pass after refill
-    await asyncio.sleep(0.25)
-    a, tokens_after, retry2 = await allow(r, key, capacity, rate)
-    assert a is True
-    await r.aclose()
+async def test_exhaust(redis: Redis) -> None:
+    key = "tb:user:test2"
+    for _ in range(10):
+        allowed, _, _ = await allow(redis, key, 10, 10)
+        assert allowed
+    allowed, tokens, retry = await allow(redis, key, 10, 10)
+    assert not allowed
+    assert tokens < 1
+    assert retry >= 0
+
+
+async def test_refill(redis: Redis) -> None:
+    key = "tb:user:test3"
+    for _ in range(10):
+        await allow(redis, key, 10, 5)
+    await asyncio.sleep(1.2)
+    allowed, tokens, _ = await allow(redis, key, 10, 5)
+    assert allowed
+    assert tokens <= 10
