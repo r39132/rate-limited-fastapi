@@ -25,10 +25,11 @@ Includes strong Python best practices: `black`, `isort`, `ruff`, `mypy`,
 ---
 ## Screenshots
 ### Locust (Load Generator) Dashboard
-![Locust (Load Generator) Dashboard](docs/Locust.png)
+<img src="docs/Locust.png" alt="Locust (Load Generator) Dashboard" width="80%">
 
 ### Performance Dashboard
-![Performance Dashboard](docs/Token_Bucket_Perf_Dashboard.png)
+<img src="docs/Token_Bucket_Perf_Dashboard.png" alt="Performance Dashboard" width="80%">
+
 
 ---
 
