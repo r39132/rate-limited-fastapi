@@ -52,7 +52,6 @@ This will create `.venv` and install all runtime + dev dependencies from `pyproj
 
 ### 2) Install Required Packages
 ```bash
-uv add pre-commit
 docker pull redis:7-alpine
 ```
 
