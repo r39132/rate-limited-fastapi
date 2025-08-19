@@ -15,4 +15,10 @@ build/
 coverage.xml
 htmlcov/
 site/
+
+# Ignore all Streamlit secrets
 .streamlit/
+dashboard/.streamlit/secrets.toml
+
+# But allow the example secrets file
+!dashboard/.streamlit/secrets.example.toml

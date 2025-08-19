@@ -112,6 +112,7 @@ uv run streamlit run dashboard/app.py
 
 ## Configuration
 
+### Tune Token Bucket Capacity and Refill Rate
 Edit `.env` (or env vars) to tune limits:
 
 ```bash
@@ -119,6 +120,13 @@ REDIS_URL=redis://localhost:6379/0
 TB_CAPACITY=20          # max tokens (burst)
 TB_RATE=20              # tokens per second
 BUCKET_PREFIX=tb:user:  # key prefix
+```
+
+### Create a Secrets file (Needed by Steamlit Dashboard)
+To run the dashboard, you’ll need to create a secrets file:
+
+```bash
+cp ./dashboard/.streamlit/secrets.example.toml ./dashboard/.streamlit/secrets.toml
 ```
 
 ---
