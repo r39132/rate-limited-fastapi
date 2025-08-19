@@ -34,6 +34,7 @@ Includes strong Python best practices: `black`, `isort`, `ruff`, `mypy`,
 
 ## Quick start
 
+## One-Time Setup
 ### 0) Install [uv](https://docs.astral.sh/uv/)
 ```bash
 # Install via Curl
@@ -41,20 +42,27 @@ curl -Ls https://astral.sh/uv/install.sh | sh
 # or via Pipx (Recommended)
 pipx install uv
 ```
-### 1) Install [precommit/prepush hooks](https://pre-commit.com/#3-install-the-git-hook-scripts)
-```bash
-pre-commit install --hook-type pre-commit
-pre-commit install --hook-type pre-push
-```
- 
 
-### 2) Create and sync a virtual environment
+### 1) Create and sync a virtual environment
 ```bash
 uv venv --python 3.12.3
 uv sync
 ```
-
 This will create `.venv` and install all runtime + dev dependencies from `pyproject.toml` / `uv.lock`.
+
+### 2) Install Required Packages
+```bash
+uv add pre-commit
+docker pull redis:7-alpine
+```
+
+### 3) Install [precommit/prepush hooks](https://pre-commit.com/#3-install-the-git-hook-scripts)
+```bash
+pre-commit install --hook-type pre-commit
+pre-commit install --hook-type pre-push
+```
+
+## Everytime
 
 ### 3) Start Redis (Docker)
 ```bash
